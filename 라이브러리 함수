@@ -1,0 +1,47 @@
+#라이브러리 
+import sqlite3
+
+# part: '초성' | '중성' | '종성' | '숫자'
+def get_braille_dot(part: str, ch: str, db_path: str = 'braille.db') -> str | None:
+    part = part.strip()
+    table_map = {
+        '초성': ('braille_initial', 'consonant'),
+        '중성': ('braille_medial',  'vowel'),
+        '종성': ('braille_final',   'consonant'),
+        '숫자': ('braille_number',  'number'),
+    }
+    if part not in table_map:
+        raise ValueError("part는 '초성', '중성', '종성', '숫자' 중 하나여야 합니다.")
+
+    table, col = table_map[part]
+
+    with sqlite3.connect(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute(f"SELECT dot_pattern FROM {table} WHERE {col} = ?", (ch,))
+        row = cur.fetchone()
+        return row[0] if row else None
+#실행예시
+print(get_braille_dot('종성', 'ㄴ'))   # -> '010010'
+print(get_braille_dot('초성', 'ㄴ'))   # -> '100100' (초성 ㄴ)
+#글자를 초,중,종성으로 분리하는 함수
+def split_hangul(ch):
+    CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ']
+    JUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ']
+    JONG = ['', 'ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ']
+    code = ord(ch) - 0xAC00
+    cho = CHO[code // 588]
+    jung = JUNG[(code % 588) // 28]
+    jong = JONG[code % 28]
+    return cho, jung, jong
+#초,중,종성을 합치는 함수
+def text_to_braille(text):
+    result = []
+    for ch in text:
+        if '가' <= ch <= '힣':
+            cho, jung, jong = split_hangul(ch)
+            result.extend([
+                get_braille_dot('초성', cho),
+                get_braille_dot('중성', jung),
+                get_braille_dot('종성', jong) if jong else ''
+            ])
+    return result
