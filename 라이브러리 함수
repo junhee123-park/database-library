@@ -45,3 +45,25 @@ def text_to_braille(text):
                 get_braille_dot('종성', jong) if jong else ''
             ])
     return result
+from braille_lib import add_correct_word, add_wrong_word
+
+import sqlite3
+
+def add_correct_word(word, db_path='braille.db'):
+    """맞힌 단어(음절)를 correct_words 테이블에 추가"""
+    with sqlite3.connect(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO correct_words (word) VALUES (?)", (word,))
+        conn.commit()
+
+def add_wrong_word(word, db_path='braille.db'):
+    """틀린 단어(음절)를 wrong_words 테이블에 추가"""
+    with sqlite3.connect(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO wrong_words (word) VALUES (?)", (word,))
+        conn.commit()
+# 사용자가 '한'이라는 단어를 맞힘
+add_correct_word('한')
+
+# 사용자가 '가'를 틀림
+add_wrong_word('가')
