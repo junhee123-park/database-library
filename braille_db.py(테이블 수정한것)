@@ -133,3 +133,28 @@ cur.executemany("INSERT INTO braille_number (number, braille_unicode, dot_patter
 conn.commit()
 conn.close()
 print("✅ braille.db 생성 완료 — 초성, 중성, 종성, 숫자 테이블 포함!")
+onn = sqlite3.connect('braille.db')
+cur = conn.cursor()
+
+# ✅ 맞힌 단어(음절) 테이블
+cur.execute("""
+CREATE TABLE IF NOT EXISTS correct_words (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    word TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+# ✅ 틀린 단어(음절) 테이블
+cur.execute("""
+CREATE TABLE IF NOT EXISTS wrong_words (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    word TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+conn.commit()
+conn.close()
+
+print("✅ braille.db에 correct_words, wrong_words 테이블이 추가되었습니다.")
