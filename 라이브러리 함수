@@ -1,28 +1,50 @@
 #라이브러리 
 import sqlite3
 
-# part: '초성' | '중성' | '종성' | '숫자'
-def get_braille_dot(part: str, ch: str, db_path: str = 'braille.db') -> str | None:
-    part = part.strip()
+def get_braille(category, char):
+    conn = sqlite3.connect('braille.db')
+    cur = conn.cursor()
+
+    # 카테고리별 테이블과 검색할 열 이름 지정
     table_map = {
-        '초성': ('braille_initial', 'consonant'),
-        '중성': ('braille_medial',  'vowel'),
-        '종성': ('braille_final',   'consonant'),
-        '숫자': ('braille_number',  'number'),
+        "초성": ("braille_initial", "consonant"),
+        "중성": ("braille_medial", "vowel"),
+        "종성": ("braille_final", "consonant"),
+        "숫자": ("braille_number", "number")
     }
-    if part not in table_map:
-        raise ValueError("part는 '초성', '중성', '종성', '숫자' 중 하나여야 합니다.")
 
-    table, col = table_map[part]
+    if category not in table_map:
+        conn.close()
+        raise ValueError("❌ category는 '초성', '중성', '종성', '숫자' 중 하나여야 합니다.")
 
-    with sqlite3.connect(db_path) as conn:
-        cur = conn.cursor()
-        cur.execute(f"SELECT dot_pattern FROM {table} WHERE {col} = ?", (ch,))
-        row = cur.fetchone()
-        return row[0] if row else None
-#실행예시
-print(get_braille_dot('종성', 'ㄴ'))   # -> '010010'
-print(get_braille_dot('초성', 'ㄴ'))   # -> '100100' (초성 ㄴ)
+    table_name, col_name = table_map[category]
+
+    # 해당 문자(char)의 점자 패턴 가져오기
+    cur.execute(f"SELECT dot_pattern FROM {table_name} WHERE {col_name}=?", (char,))
+    result = cur.fetchone()
+    conn.close()
+
+    if not result:
+        return None
+
+    dot_pattern = result[0].strip()  # 예: "010000" 또는 "010111 100000"
+
+    # 숫자는 두 모듈로 구성됨 (공백으로 구분되어 있음)
+    if category == "숫자":
+        patterns = dot_pattern.split()  # ['010111', '100000']
+        if len(patterns) != 2:
+            raise ValueError("❌ 숫자 패턴은 두 개의 6점 패턴으로 구성되어야 합니다.")
+
+        first_module = [(1, int(bit)) for bit in patterns[0].ljust(6, "0")]
+        second_module = [(2, int(bit)) for bit in patterns[1].ljust(6, "0")]
+        return first_module + second_module
+
+    # 초성/중성/종성은 하나의 6점 패턴
+    prefix = {"초성": 1, "중성": 2, "종성": 3}[category]
+    pattern = dot_pattern.ljust(6, "0")[:6]  # 혹시 짧으면 6자리로 보정
+    result_list = [(prefix, int(bit)) for bit in pattern]
+    return result_list
+
 #글자를 초,중,종성으로 분리하는 함수
 def split_hangul(ch):
     CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ']
