@@ -1,4 +1,3 @@
-#라이브러리 
 import sqlite3
 
 def get_braille(category, char):
@@ -45,32 +44,6 @@ def get_braille(category, char):
     result_list = [(prefix, int(bit)) for bit in pattern]
     return result_list
 
-#글자를 초,중,종성으로 분리하는 함수
-def split_hangul(ch):
-    CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ']
-    JUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ']
-    JONG = ['', 'ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ']
-    code = ord(ch) - 0xAC00
-    cho = CHO[code // 588]
-    jung = JUNG[(code % 588) // 28]
-    jong = JONG[code % 28]
-    return cho, jung, jong
-#초,중,종성을 합치는 함수
-def text_to_braille(text):
-    result = []
-    for ch in text:
-        if '가' <= ch <= '힣':
-            cho, jung, jong = split_hangul(ch)
-            result.extend([
-                get_braille_dot('초성', cho),
-                get_braille_dot('중성', jung),
-                get_braille_dot('종성', jong) if jong else ''
-            ])
-    return result
-from braille_lib import add_correct_word, add_wrong_word
-
-import sqlite3
-
 def add_correct_word(word, db_path='braille.db'):
     """맞힌 단어(음절)를 correct_words 테이블에 추가"""
     with sqlite3.connect(db_path) as conn:
@@ -84,8 +57,10 @@ def add_wrong_word(word, db_path='braille.db'):
         cur = conn.cursor()
         cur.execute("INSERT INTO wrong_words (word) VALUES (?)", (word,))
         conn.commit()
+#사용예시:
+#print(get_braille("초성","ㄱ"))
 # 사용자가 '한'이라는 단어를 맞힘
-add_correct_word('한')
+#add_correct_word('한')
 
 # 사용자가 '가'를 틀림
-add_wrong_word('가')
+#add_wrong_word('가')
