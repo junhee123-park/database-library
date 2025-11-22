@@ -32,7 +32,7 @@ initials = [
     ('ㄸ', '000001 011000', '초성 ㄸ'),
     ('ㅃ', '000001 010100', '초성 ㅃ'),
     ('ㅆ', '000001 000001', '초성 ㅆ'),
-    ('ㅉ', '000001 010001', '초성 ㅉ'),
+    ('ㅉ', '000001 010001', '초성 ㅉ')
     
 ]
 cur.executemany("INSERT INTO braille_initial (consonant, dot_pattern, description) VALUES (?, ?, ?)", initials)
