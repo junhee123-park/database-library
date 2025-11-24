@@ -61,6 +61,24 @@ def get_braille(category, char):
     else:
         raise ValueError("점자 모듈이 1개 또는 2개여야 합니다.")
 
+def get_symbol_list(category, db_path='braille.db'):
+    """초성, 중성, 종성, 숫자 리스트를 DB에서 불러오기"""
+    table_map = {
+        "초성": ("braille_initial", "consonant"),
+        "중성": ("braille_medial", "vowel"),
+        "종성": ("braille_final", "consonant"),
+        "숫자": ("braille_number", "number")
+    }
+
+    if category not in table_map:
+        raise ValueError("❌ category는 '초성', '중성', '종성', '숫자' 중 하나여야 합니다.")
+
+    table, col = table_map[category]
+    with sqlite3.connect(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute(f"SELECT {col} FROM {table}")
+        result = [row[0] for row in cur.fetchall()]
+    return result
 
 
 def add_correct_word(word, db_path='braille.db'):
@@ -98,21 +116,18 @@ def get_wrong_words(db_path='braille.db', limit=None):
         cur.execute(query)
         return cur.fetchall()
 
-def get_symbol_list(category, db_path='braille.db'):
-    """초성, 중성, 종성, 숫자 리스트를 DB에서 불러오기"""
-    table_map = {
-        "초성": ("braille_initial", "consonant"),
-        "중성": ("braille_medial", "vowel"),
-        "종성": ("braille_final", "consonant"),
-        "숫자": ("braille_number", "number")
-    }
 
-    if category not in table_map:
-        raise ValueError("❌ category는 '초성', '중성', '종성', '숫자' 중 하나여야 합니다.")
-
-    table, col = table_map[category]
-    with sqlite3.connect(db_path) as conn:
-        cur = conn.cursor()
-        cur.execute(f"SELECT {col} FROM {table}")
-        result = [row[0] for row in cur.fetchall()]
-    return result
+def reset_correct_words():
+    conn = sqlite3.connect("braille.db")
+    cur = conn.cursor()
+    cur.execute("DELETE FROM correct_words")
+    conn.commit()
+    conn.close()
+    print("✅ correct_words 테이블이 초기화되었습니다.")
+def reset_wrong_words():
+    conn = sqlite3.connect("braille.db")
+    cur = conn.cursor()
+    cur.execute("DELETE FROM wrong_words")
+    conn.commit()
+    conn.close()
+    print("❗ wrong_words 테이블이 초기화되었습니다.")
