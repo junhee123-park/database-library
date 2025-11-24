@@ -13,41 +13,54 @@ def get_braille(category, char):
 
     if category not in table_map:
         conn.close()
-        raise ValueError("❌ category는 '초성', '중성', '종성', '숫자' 중 하나여야 합니다.")
+        raise ValueError("category는 초성/중성/종성/숫자만 가능")
 
-    table_name, col_name = table_map[category]
-    cur.execute(f"SELECT dot_pattern FROM {table_name} WHERE {col_name}=?", (char,))
-    result = cur.fetchone()
+    table_name, col = table_map[category]
+    cur.execute(f"SELECT dot_pattern FROM {table_name} WHERE {col}=?", (char,))
+    row = cur.fetchone()
     conn.close()
 
-    if not result:
+    if not row:
         return None
 
-    dot_pattern = result[0].strip()
+    dot_pattern = row[0].strip()
 
-    # --- 숫자일 경우 (모듈 2개, 12자리 문자열) ---
-    if category == "숫자":
-        patterns = dot_pattern.split()  # ['010111', '100000']
-        if len(patterns) != 2:
-            raise ValueError("❌ 숫자 패턴은 두 개의 6점 패턴으로 구성되어야 합니다.")
-        result_str = ""
-        # 첫 번째 모듈 (1)
-        for bit in patterns[0].ljust(6, "0"):
-            result_str += "1" + bit
-        # 두 번째 모듈 (2)
-        for bit in patterns[1].ljust(6, "0"):
-            result_str += "2" + bit
-        return result_str  # 예: "101011101111210000100000"
+    # 셀 분리
+    cells = dot_pattern.split()
 
-    # --- 초성/중성/종성 (6점 패턴) ---
-    prefix = {"초성": "1", "중성": "2", "종성": "3"}[category]
-    dot_pattern = dot_pattern.ljust(6, "0")[:6]
+    # prefix (1셀 전용)
+    prefix_map = {"초성":"1", "중성":"2", "종성":"3", "숫자":"4"}
+    prefix = prefix_map[category]
 
-    result_str = ""
-    for bit in dot_pattern:
-        result_str += prefix + bit
+    # --- 1셀 (12자리) ---
+    if len(cells) == 1:
+        cell = cells[0]
+        result = ""
+        for bit in cell:
+            if bit == "0":
+                result += prefix + "0"
+            else:
+                result += prefix + "1"
+        return result
 
-    return result_str
+    # --- 2셀 (24자리) ---
+    elif len(cells) == 2:
+        cell1, cell2 = cells
+        result = ""
+
+        # 첫 번째 셀: 1x
+        for bit in cell1:
+            result += "11" if bit == "1" else "10"
+
+        # 두 번째 셀: 2x
+        for bit in cell2:
+            result += "21" if bit == "1" else "20"
+
+        return result
+
+    else:
+        raise ValueError("점자 모듈이 1개 또는 2개여야 합니다.")
+
 
 
 def add_correct_word(word, db_path='braille.db'):
