@@ -95,26 +95,47 @@ def add_wrong_word(word, db_path='braille.db'):
         cur = conn.cursor()
         cur.execute("INSERT INTO wrong_words (word) VALUES (?)", (word,))
         conn.commit()
+def get_correct_words(limit=None, db_path='braille.db'):
+    """correct_words에서 단어 목록만 가져오기 (시간 제거, limit은 위치 인자 가능)"""
 
+    # limit이 숫자로 들어온 경우 (예: get_correct_words(3))
+    # 또는 limit=3 처럼 들어온 경우도 처리
+    if isinstance(limit, str) and limit.isdigit():
+        limit = int(limit)
 
-def get_correct_words(db_path='braille.db', limit=None):
     with sqlite3.connect(db_path) as conn:
         cur = conn.cursor()
-        query = "SELECT word, timestamp FROM correct_words ORDER BY id DESC"
-        if limit:
+
+        query = "SELECT word FROM correct_words ORDER BY id DESC"
+
+        if isinstance(limit, int):
             query += f" LIMIT {limit}"
+
         cur.execute(query)
-        return cur.fetchall()  # [(word, timestamp), (word, timestamp), ...]
+        rows = cur.fetchall()  # [(word,), (word,), ...]
 
+        return [row[0] for row in rows]
 
-def get_wrong_words(db_path='braille.db', limit=None):
+def get_wrong_words(limit=None, db_path='braille.db'):
+    """wrong_words에서 단어 목록만 가져오기 (시간 제거, limit은 위치 인자 가능)"""
+
+    # limit이 "3"처럼 문자열로 들어오면 숫자로 변환
+    if isinstance(limit, str) and limit.isdigit():
+        limit = int(limit)
+
     with sqlite3.connect(db_path) as conn:
         cur = conn.cursor()
-        query = "SELECT word, timestamp FROM wrong_words ORDER BY id DESC"
-        if limit:
+
+        query = "SELECT word FROM wrong_words ORDER BY id DESC"
+
+        # limit이 숫자로 주어진 경우에만 LIMIT 추가
+        if isinstance(limit, int):
             query += f" LIMIT {limit}"
+
         cur.execute(query)
-        return cur.fetchall()
+        rows = cur.fetchall()  # [(word,), (word,), ...]
+
+        return [row[0] for row in rows]
 
 
 def reset_correct_words():
